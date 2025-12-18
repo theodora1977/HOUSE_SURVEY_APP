@@ -5,7 +5,8 @@ class House(Base):
     __tablename__ = "houses"
 
     id = Column(Integer, primary_key=True, index=True)
-    location = Column(String, index=True, nullable=False)
+    state = Column(String, index=True, nullable=False)
+    town = Column(String, index= True, nullabe=False)
     price = Column(String, index=True, nullable=False)
     house_type = Column(String, index=True, nullable=False)
     bedrooms = Column(Integer, nullable=True)

@@ -7,18 +7,18 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")  # Example: postgresql://user:pass@localhost:5432/housing_db
+DATABASE_URL = os.getenv("DATABASE_URL")  
 
-# Create database engine and session
+# Database setup
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 db = SessionLocal()
 
-# Create tables if they don't exist
+
 Base.metadata.create_all(bind=engine)
 
 # Path to CSV
-CSV_FILE = "data/nigerian_houses.csv"
+CSV_FILE = "data/house_data.csv"
 
 # Helper functions for numeric conversion
 def parse_float(value):
@@ -39,12 +39,14 @@ with open(CSV_FILE, newline='', encoding='utf-8') as file:
     count = 0
     for row in reader:
         house = House(
-            location=row.get("location", "").strip(),
-            price=parse_float(row.get("price", 0)),
-            house_type=row.get("house_type", "Unknown").strip(),
+            state=row.get("state", "").strip(),
+            town=row.get("town", "").strip(),
+            house_type=row.get("House_Type", "Unknown").strip(),
             bedrooms=parse_int(row.get("bedrooms", 0)),
             bathrooms=parse_int(row.get("bathrooms", 0)),
-            description=row.get("description", "").strip()
+            toilets=parse_int(row.get("toilets", 0)),
+            parking_space=parse_int(row.get("parking_space", 0)),
+            price=parse_float(row.get("price", 0))
         )
         db.add(house)
         count += 1
