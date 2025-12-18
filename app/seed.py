@@ -44,8 +44,6 @@ with open(CSV_FILE, newline='', encoding='utf-8') as file:
             house_type=row.get("House_Type", "Unknown").strip(),
             bedrooms=parse_int(row.get("bedrooms", 0)),
             bathrooms=parse_int(row.get("bathrooms", 0)),
-            toilets=parse_int(row.get("toilets", 0)),
-            parking_space=parse_int(row.get("parking_space", 0)),
             price=parse_float(row.get("price", 0))
         )
         db.add(house)
