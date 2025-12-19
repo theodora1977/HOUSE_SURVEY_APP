@@ -1,16 +1,14 @@
 from fastapi import FastAPI
-from app.database import engine, Base
+from app import models, schema
+from app.database import engine
 from app.routers import houses, auth
 
+app = FastAPI()
 
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(title="Nigerian Housing API")
-
-# Include routers
-app.include_router(auth.router)
+# Include the routers from other files
 app.include_router(houses.router)
+app.include_router(auth.router)
 
 @app.get("/")
-def root():
-    return {"message": "Welcome to the Nigerian Housing API"}
+def read_root():
+    return {"message": "House Survey API is running"}

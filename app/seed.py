@@ -1,19 +1,10 @@
 import csv
 import os
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-from app.models import Base, House
-from dotenv import load_dotenv
+from app.database import SessionLocal, engine
+from app.models import Base, House, HouseType, BathroomType, ToiletType, ParkingSpaceType
 
-# Load environment variables
-load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")  
-
-# Database setup
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Database setup using the configuration from app.database
 db = SessionLocal()
-
 
 Base.metadata.create_all(bind=engine)
 
@@ -38,12 +29,17 @@ with open(CSV_FILE, newline='', encoding='utf-8') as file:
     reader = csv.DictReader(file)
     count = 0
     for row in reader:
+        # We use .get() with defaults to avoid errors if columns are missing in CSV
         house = House(
             state=row.get("state", "").strip(),
             town=row.get("town", "").strip(),
-            house_type=row.get("House_Type", "Unknown").strip(),
+            # Ensure these match your Enum values exactly (e.g., "Duplex")
+            house_type=row.get("house_type", "Duplex").strip(),
             bedrooms=parse_int(row.get("bedrooms", 0)),
-            bathrooms=parse_int(row.get("bathrooms", 0)),
+            # For Enums, we pass the string value (e.g., "1", "2", "5+")
+            bathrooms=row.get("bathrooms", "1").strip(),
+            toilets=row.get("toilets", "1").strip(),
+            parking_space=row.get("parking_space", "1").strip(),
             price=parse_float(row.get("price", 0))
         )
         db.add(house)

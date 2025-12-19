@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+import joblib
+import pandas as pd
+import os
 
 from app import models, schema, security
 from app.database import get_db
@@ -38,6 +41,48 @@ def get_houses_in_town(town_name: str, db: Session = Depends(get_db), current_us
     if not houses:
         raise HTTPException(status_code=404, detail="Town not found or no houses available")
     return houses
+
+@router.get("/options/house-types", response_model=List[str])
+def get_house_types(current_user: schema.UserResponse = Depends(security.get_current_user)):
+    """Returns available house types for the dropdown."""
+    return [t.value for t in models.HouseType]
+
+@router.get("/options/bathroom-types", response_model=List[str])
+def get_bathroom_types(current_user: schema.UserResponse = Depends(security.get_current_user)):
+    """Returns available bathroom options for the dropdown."""
+    return [t.value for t in models.BathroomType]
+
+@router.get("/options/toilet-types", response_model=List[str])
+def get_toilet_types(current_user: schema.UserResponse = Depends(security.get_current_user)):
+    """Returns available toilet options for the dropdown."""
+    return [t.value for t in models.ToiletType]
+
+@router.get("/options/parking-space-types", response_model=List[str])
+def get_parking_space_types(current_user: schema.UserResponse = Depends(security.get_current_user)):
+    """Returns available parking space options for the dropdown."""
+    return [t.value for t in models.ParkingSpaceType]
+
+@router.post("/predict")
+def predict_price(input_data: schema.HousePredictionInput, current_user: schema.UserResponse = Depends(security.get_current_user)):
+    """
+    Predicts the house price based on features provided by the user.
+    """
+    model_path = "house_price_model.pkl"
+    
+    if not os.path.exists(model_path):
+        return {"predicted_price": 0.0, "message": "Model not trained yet. Please run app/train_model.py"}
+
+    # Load the model
+    model = joblib.load(model_path)
+
+    # Convert input data to a DataFrame (must match the training columns exactly)
+    input_df = pd.DataFrame([input_data.dict()])
+    
+    # Make prediction
+    prediction = model.predict(input_df)
+    
+    # Return the result (prediction is an array, we take the first item)
+    return {"predicted_price": round(prediction[0], 2)}
 
 @router.get("/{house_id}", response_model=schema.HouseResponse) # Removed the local get_current_user
 def get_house_by_id(house_id: int, db: Session = Depends(get_db), current_user: schema.UserResponse = Depends(security.get_current_user)):
