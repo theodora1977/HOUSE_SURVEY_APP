@@ -10,6 +10,15 @@ from app.database import get_db
 
 router = APIRouter(prefix="/houses", tags=["Houses"])
 
+# --- Performance Improvement: Load Model Once ---
+MODEL_PATH = "house_price_model.pkl"
+model = None
+
+if os.path.exists(MODEL_PATH):
+    model = joblib.load(MODEL_PATH)
+    print("Prediction model loaded successfully.")
+# ---------------------------------------------
+
 @router.get("/states", response_model=List[str]) # Removed the local get_current_user
 def get_all_states(db: Session = Depends(get_db), current_user: schema.UserResponse = Depends(security.get_current_user)):
     """
@@ -67,13 +76,8 @@ def predict_price(input_data: schema.HousePredictionInput, current_user: schema.
     """
     Predicts the house price based on features provided by the user.
     """
-    model_path = "house_price_model.pkl"
-    
-    if not os.path.exists(model_path):
+    if model is None:
         return {"predicted_price": 0.0, "message": "Model not trained yet. Please run app/train_model.py"}
-
-    # Load the model
-    model = joblib.load(model_path)
 
     # Convert input data to a DataFrame (must match the training columns exactly)
     input_df = pd.DataFrame([input_data.dict()])

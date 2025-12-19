@@ -4,13 +4,15 @@ from app.database import Base
 
 class HouseType(str, enum.Enum):
     DUPLEX = "Duplex"
-    DETACHED_DUPLEX = "Detached Duplex"
-    SEMI_DETACHED_DUPLEX = "Semi-Detached Duplex"
-    MODERN_DETACHED = "Modern Detached"
+    DETACHED_HOUSE = "Detached House"
+    SEMI_DETACHED_HOUSE = "Semi-Detached House"
+    TERRACED_HOUSE = "Terraced House"
     BUNGALOW = "Bungalow"
-    APARTMENT = "Apartment"
-    TERRACE = "Terrace"
+    BLOCK_OF_FLATS = "Block Of Flats"
+    FLAT = "Flat"
+    MAISONETTE = "Maisonette"
     PENTHOUSE = "Penthouse"
+    STUDIO_APARTMENT = "Studio Apartment"
 
 class BathroomType(str, enum.Enum):
     ONE = "1"

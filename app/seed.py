@@ -6,8 +6,6 @@ from app.models import Base, House, HouseType, BathroomType, ToiletType, Parking
 # Database setup using the configuration from app.database
 db = SessionLocal()
 
-Base.metadata.create_all(bind=engine)
-
 # Path to CSV
 CSV_FILE = "data/house_data.csv"
 
@@ -34,7 +32,7 @@ with open(CSV_FILE, newline='', encoding='utf-8') as file:
             state=row.get("state", "").strip(),
             town=row.get("town", "").strip(),
             # Ensure these match your Enum values exactly (e.g., "Duplex")
-            house_type=row.get("house_type", "Duplex").strip(),
+            house_type=row.get("House_Type", "Duplex").strip(),
             bedrooms=parse_int(row.get("bedrooms", 0)),
             # For Enums, we pass the string value (e.g., "1", "2", "5+")
             bathrooms=row.get("bathrooms", "1").strip(),
