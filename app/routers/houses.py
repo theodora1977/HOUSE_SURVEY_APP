@@ -1,55 +1,41 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 import joblib
 import pandas as pd
 import os
 
-from app import models, schema, security
+from app import schema, security
 from app.database import get_db
+from app import models
 
 router = APIRouter(prefix="/houses", tags=["Houses"])
 
-# --- Performance Improvement: Load Model Once ---
+# --- Load AI model once ---
 MODEL_PATH = "house_price_model.pkl"
 model = None
 
 if os.path.exists(MODEL_PATH):
     model = joblib.load(MODEL_PATH)
     print("Prediction model loaded successfully.")
-# ---------------------------------------------
 
-@router.get("/states", response_model=List[str]) # Removed the local get_current_user
-def get_all_states(db: Session = Depends(get_db), current_user: schema.UserResponse = Depends(security.get_current_user)):
+# --- Prediction Endpoint ---
+@router.post("/predict")
+def predict_price(
+    input_data: schema.HousePredictionInput,
+    current_user: schema.UserResponse = Depends(security.get_current_user)
+):
     """
-    Returns a list of all unique states where houses are available.
-    Requires authentication.
+    Predicts house price based on user input:
+    bedrooms, bathrooms, toilets, parking space.
     """
-    states = db.query(models.House.state).distinct().all()
-    return [state[0] for state in states]
+    if model is None:
+        return {"predicted_price": 0.0, "message": "Model not trained yet."}
 
-@router.get("/states/{state_name}/towns", response_model=List[str]) # Removed the local get_current_user
-def get_towns_in_state(state_name: str, db: Session = Depends(get_db), current_user: schema.UserResponse = Depends(security.get_current_user)):
-    """
-    Given a state, returns a list of all unique towns within that state.
-    Requires authentication.
-    """
-    towns = db.query(models.House.town).filter(models.House.state.ilike(state_name)).distinct().all()
-    if not towns:
-        raise HTTPException(status_code=404, detail="State not found or no towns available")
-    return [town[0] for town in towns]
-
-@router.get("/towns/{town_name}/houses", response_model=List[schema.HouseResponse]) # Removed the local get_current_user
-def get_houses_in_town(town_name: str, db: Session = Depends(get_db), current_user: schema.UserResponse = Depends(security.get_current_user)):
-    """
-    Given a town, returns a list of all available houses.
-    The price shown is the specific price for each house listing.
-    Requires authentication.
-    """
-    houses = db.query(models.House).filter(models.House.town.ilike(town_name)).all()
-    if not houses:
-        raise HTTPException(status_code=404, detail="Town not found or no houses available")
-    return houses
+    # Convert input to DataFrame (model expects same columns as training)
+    input_df = pd.DataFrame([input_data.dict()])
+    prediction = model.predict(input_df)
+    return {"predicted_price": round(prediction[0], 2)}
 
 @router.get("/options/house-types", response_model=List[str])
 def get_house_types(current_user: schema.UserResponse = Depends(security.get_current_user)):
@@ -70,32 +56,3 @@ def get_toilet_types(current_user: schema.UserResponse = Depends(security.get_cu
 def get_parking_space_types(current_user: schema.UserResponse = Depends(security.get_current_user)):
     """Returns available parking space options for the dropdown."""
     return [t.value for t in models.ParkingSpaceType]
-
-@router.post("/predict")
-def predict_price(input_data: schema.HousePredictionInput, current_user: schema.UserResponse = Depends(security.get_current_user)):
-    """
-    Predicts the house price based on features provided by the user.
-    """
-    if model is None:
-        return {"predicted_price": 0.0, "message": "Model not trained yet. Please run app/train_model.py"}
-
-    # Convert input data to a DataFrame (must match the training columns exactly)
-    input_df = pd.DataFrame([input_data.dict()])
-    
-    # Make prediction
-    prediction = model.predict(input_df)
-    
-    # Return the result (prediction is an array, we take the first item)
-    return {"predicted_price": round(prediction[0], 2)}
-
-@router.get("/{house_id}", response_model=schema.HouseResponse) # Removed the local get_current_user
-def get_house_by_id(house_id: int, db: Session = Depends(get_db), current_user: schema.UserResponse = Depends(security.get_current_user)):
-    """
-    Retrieves the full details for a single house by its ID.
-    This would be the "view details" page for a property.
-    Requires authentication.
-    """
-    house = db.query(models.House).filter(models.House.id == house_id).first()
-    if not house:
-        raise HTTPException(status_code=404, detail=f"House with id {house_id} not found")
-    return house

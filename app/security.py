@@ -14,7 +14,7 @@ load_dotenv()
 # Configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_that_should_be_in_env")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 300000  # 300,000 minutes = ~208 days
 
 # Password Hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -52,6 +52,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         headers={"WWW-Authenticate": "Bearer"},
     )
     email = decode_access_token(token)
+    print
     if email is None:
         raise credentials_exception
     user = db.query(models.User).filter(models.User.email == email).first()
